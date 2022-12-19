@@ -30,7 +30,7 @@
 import signal
 import sys
 
-import tools
+import aws_tools
 
 import buckets_s3
 import services
@@ -38,11 +38,11 @@ import services
 
 def main(argv):
     # Parse arguments
-    options = tools.get_script_arguments()
+    options = aws_tools.get_script_arguments()
 
     if int(options.debug) > 0:
-        tools.debug_level = int(options.debug)
-        tools.debug('+++ Debug mode on - Level: {debug}'.format(debug=options.debug), 1)
+        aws_tools.debug_level = int(options.debug)
+        aws_tools.debug('+++ Debug mode on - Level: {debug}'.format(debug=options.debug), 1)
 
     try:
         if options.logBucket:
@@ -101,18 +101,18 @@ def main(argv):
                 raise Exception("Invalid type of service")
 
             if not options.regions:
-                aws_config = tools.get_aws_config_params()
+                aws_config = aws_tools.get_aws_config_params()
 
                 aws_profile = options.aws_profile or "default"
 
                 if aws_config.has_option(aws_profile, "region"):
                     options.regions.append(aws_config.get(aws_profile, "region"))
                 else:
-                    tools.debug("+++ Warning: No regions were specified, trying to get events from all regions", 1)
-                    options.regions = tools.ALL_REGIONS
+                    aws_tools.debug("+++ Warning: No regions were specified, trying to get events from all regions", 1)
+                    options.regions = aws_tools.ALL_REGIONS
 
             for region in options.regions:
-                tools.debug('+++ Getting alerts from "{}" region.'.format(region), 1)
+                aws_tools.debug('+++ Getting alerts from "{}" region.'.format(region), 1)
                 service = service_type(reparse=options.reparse,
                                        access_key=options.access_key,
                                        secret_key=options.secret_key,
@@ -131,8 +131,8 @@ def main(argv):
                 service.get_alerts()
 
     except Exception as err:
-        tools.debug("+++ Error: {}".format(err), 2)
-        if tools.debug_level > 0:
+        aws_tools.debug("+++ Error: {}".format(err), 2)
+        if aws_tools.debug_level > 0:
             raise
         print("ERROR: {}".format(err))
         sys.exit(12)
@@ -140,12 +140,12 @@ def main(argv):
 
 if __name__ == '__main__':
     try:
-        tools.debug('Args: {args}'.format(args=str(sys.argv)), 2)
-        signal.signal(signal.SIGINT, tools.handler)
+        aws_tools.debug('Args: {args}'.format(args=str(sys.argv)), 2)
+        signal.signal(signal.SIGINT, aws_tools.handler)
         main(sys.argv[1:])
         sys.exit(0)
     except Exception as e:
         print("Unknown error: {}".format(e))
-        if tools.debug_level > 0:
+        if aws_tools.debug_level > 0:
             raise
         sys.exit(1)
