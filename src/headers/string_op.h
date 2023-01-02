@@ -393,4 +393,14 @@ char** w_strtok(const char *string);
  */
 char* w_strcat_list(char ** list, char sep);
 
+/**
+ * @brief Extract word between two characters.
+ *
+ * @param string String to extract word.
+ * @param fst_pattern     First separator.
+ * @param scd_pattern   Second separator.
+ * @return Allocated word.
+ */
+char* extract_word_btw_patterns(char* string, char fst_pattern,char scd_pattern);
+
 #endif

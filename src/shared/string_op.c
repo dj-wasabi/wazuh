@@ -1219,3 +1219,19 @@ char* w_strcat_list(char ** list, char sep_char) {
 
     return concatenation;
 }
+
+char* extract_word_btw_patterns(char* string, char fst_pattern,char scd_pattern){
+    char* word  = NULL;
+    char* start = strstr(string, fst_pattern);
+    char* end   =  NULL;
+
+    if(start){
+        start += strlen(fst_pattern);
+        if(end = strstr(start, scd_pattern)){
+            os_calloc(end-start+1,sizeof(char),word);
+            memcpy(word,start,end - start);
+            word[end - start] = '\0';
+        }
+    }
+    return word;
+}

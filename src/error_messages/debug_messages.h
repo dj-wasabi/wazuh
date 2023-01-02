@@ -274,6 +274,9 @@
 #define FIM_WHODATA_POLICY_OPENED           "(6367): Audit policy opened successfully. Audit mode enabled."
 #define FIM_WHODATA_OBJECT_ACCESS           "(6368): Detected Audit Object Access category, checking subcategories. GUID: %s"
 #define FIM_WHODATA_SUCCESS_POLICY          "(6369): Found Audit %s subcategory configured to success. GUID: %s"
+#define FIM_WILDCARDS_REGISTERS_START       "(6370): Starting configuration for Windows registry wildcards."
+#define FIM_WILDCARDS_ADD_REGISTER          "(6371): Expanding entry '%s' to '%s' to monitor FIM events."
+#define FIM_WILDCARDS_REGISTERS_FINALIZE    "(6372): Wildcard configuration successfully completed."
 
 /* Modules messages */
 #define WM_UPGRADE_RESULT_AGENT_INFO         "(8151): Agent Information obtained: '%s'"
