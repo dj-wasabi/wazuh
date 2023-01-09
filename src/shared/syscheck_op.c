@@ -1213,6 +1213,7 @@ HKEY w_switch_root_key(char* str_rootkey){
 
 void expand_wildcard_registers(char* entry,char** paths){
     reg_path_struct** aux_vector;
+    reg_path_struct** current_position;
     os_calloc(OS_SIZE_1024,sizeof(reg_path_struct*),aux_vector);
 
     reg_path_struct* first_e;
@@ -1222,33 +1223,51 @@ void expand_wildcard_registers(char* entry,char** paths){
     first_e->has_wildcard   = check_wildcard(entry);
     first_e->checked        = 0;
     *aux_vector             = first_e;
-    //Check first if there is a *
-    if(strchr(first_e->path,'*')){
-        do{
-            w_expand_by_wildcard(aux_vector,'*');
-        } while (w_is_still_a_wildcard(aux_vector));
-    }
+    current_position        = aux_vector; //Save the current pointer for future iteration
 
+    // ----- Begin expansion path section -----
+
+    //If we have a combination, we need to iterate over all possible paths
+    if (strchr((*current_position)->path, '*') && strchr((*current_position)->path, '?')) {
+        while (w_is_still_a_wildcard(current_position)) {
+            if (strchr((*current_position)->path, '*')) {
+                w_expand_by_wildcard(current_position, '*');
+            }
+            else {
+                w_expand_by_wildcard(current_position, '?');
+            }
+            current_position++;
+        }
+    }
+    //Check first if there is a *, for a single expansion
+    else if (strchr((*current_position)->path, '*')) {
+        do {
+            w_expand_by_wildcard(current_position, '*');
+        } while (w_is_still_a_wildcard(current_position));
+    }
     //Then check if there is a ?
-    if(strchr(first_e->path,'?')){
-        do{
-            w_expand_by_wildcard(aux_vector,'?');
-        } while (w_is_still_a_wildcard(aux_vector));
+    else if (strchr((*current_position)->path, '?')) {
+        do {
+            w_expand_by_wildcard(current_position, '?');
+        } while (w_is_still_a_wildcard(current_position));
     }
+    // ----- End expansion path section -----
 
-    while(*aux_vector != NULL){
-        if(!(*aux_vector)->has_wildcard && (*aux_vector)->checked){
-            *paths = strdup((*aux_vector)->path);
-            free((*aux_vector)->path);
-            free(*aux_vector);
+    current_position = aux_vector;
+    while(*current_position != NULL){
+        if(!(*current_position)->has_wildcard && (*current_position)->checked){
+            *paths = strdup((*current_position)->path);
+            free((*current_position)->path);
+            free(*current_position);
             paths++;
         } else {
-            free((*aux_vector)->path);
-            free(*aux_vector);
+            free((*current_position)->path);
         }
-        aux_vector++;
+        current_position++;
     }
 
+    //Release memory before leaves function
+    free(*current_position);
 }
 
 char* get_subkey(char* key, char chrwildcard){
@@ -1371,10 +1390,10 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
     //Take the first part of the wildcard, splitting by wildcard.
     char* first_part            = strtok(aux_path, wildcard_str);
 
-    if(wildcard_chr=='?'){
+    if(wildcard_chr == '?'){
         //Clean partial matcher
         for (int chr = strlen(first_part) - 1; chr >= 0; chr--) {
-            if (first_part[chr] != '\\') {
+            if (first_part[chr] != '\\' && first_part[chr] != '?') {
 
                 first_part[chr] = '\0';
                 } else {
@@ -1384,9 +1403,14 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
         }
 
         //Obtain the matcher word.
-        matcher = strchr((*array_struct)->path, '\\') + 1;
+        matcher = strdup(strchr((*array_struct)->path, '\\') + 1);
 
-        matcher = extract_word_btw_patterns(matcher,'\\','?');
+        if (strchr(matcher, '\\')) {
+            matcher = extract_word_btw_patterns(matcher, "\\", "?");
+        }
+        else {
+            matcher[strlen(matcher) - 1] = '\0';
+        }
     }
 
     //Take the remainder part of the path.
@@ -1481,7 +1505,10 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
 
                     //Add key result.
                     strcat(full_path, *query_keys);
-                    strcat(full_path, "\\");
+                    //Check if necessary add a \ 
+                    if (!strchr(second_part, '\\')) {
+                        strcat(full_path, "\\");
+                    }
 
                     //Copy second part.
                     strcat(full_path, second_part);
@@ -1499,7 +1526,7 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
 
                     new_struct->path            = full_path;
                     new_struct->has_wildcard    = (check_wildcard(full_path)) && !(check_wildcard(*query_keys)) ? 1 : 0;
-                    new_struct->checked         = 1;
+                    new_struct->checked         = 1 && !new_struct->has_wildcard;
                     array_struct[first_empty]   = new_struct; 
 
                     //Increment pointers.
