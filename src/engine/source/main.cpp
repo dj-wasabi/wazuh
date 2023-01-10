@@ -441,8 +441,8 @@ void configureSubCommandCatalog(std::shared_ptr<CLI::App> app)
                      args::catalogName,
                      nameDesc
                          + "type of the items collection: item-type. The supported item "
-                           "types are: \"decoder\", \"rule\", \"filter\", \"output\", "
-                           "\"schema\" and \"environment\".")
+                           "types are: decoder, rule, filter, output, route "
+                           "schema and environment.")
         ->required();
     load_subcommand
         ->add_option("path",

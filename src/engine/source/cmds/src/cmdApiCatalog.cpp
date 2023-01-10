@@ -18,14 +18,12 @@
 namespace
 {
 constexpr auto INVALID_NAME_FOR_ACTION =
-    "Engine API Catalog: Invalid name \"{}\" for action \"{}\", the name must have the "
-    "following format: \"{}\".";
+    "Engine API Catalog: Invalid name '{}' for action '{}', the name must have the "
+    "following format: '{}'.";
 
-constexpr auto CONTENT_SHOULD_BE_EMPTY =
-    "Engine API Catalog: Content should be empty for action \"{}\".";
+constexpr auto CONTENT_SHOULD_BE_EMPTY = "Engine API Catalog: Content should be empty for action '{}'.";
 
-constexpr auto CONTENT_CANNOT_BE_EMPTY =
-    "Engine API Catalog: Content cannot be empty for action \"{}\".";
+constexpr auto CONTENT_CANNOT_BE_EMPTY = "Engine API Catalog: Content cannot be empty for action '{}'.";
 } // namespace
 
 namespace cmd
@@ -42,8 +40,8 @@ void singleRequest(const std::string& socketPath,
 {
     api::WazuhRequest request;
 
-    WAZUH_LOG_DEBUG("Engine API Catalog: \"{}\" method: Request parameters: socket path: "
-                    "\"{}\", action: \"{}\", type: \"{}\", format: \"{}\".",
+    WAZUH_LOG_DEBUG("Engine API Catalog: '{}' method: Request parameters: socket path: "
+                    "'{}', action: '{}', type: '{}', format: '{}'.",
                     __func__,
                     socketPath,
                     actionStr,
@@ -66,8 +64,7 @@ void singleRequest(const std::string& socketPath,
     }
     catch (const std::exception& e)
     {
-        WAZUH_LOG_ERROR(
-            "Engine API Catalog: Invalid name \"{}\": {}.", nameStr, e.what());
+        WAZUH_LOG_ERROR("Engine API Catalog: Invalid name '{}': {}.", nameStr, e.what());
         return;
     }
 
@@ -77,8 +74,7 @@ void singleRequest(const std::string& socketPath,
             if (name.parts().size() != 1 && name.parts().size() != 2)
             {
                 // TODO: Check this message
-                WAZUH_LOG_ERROR(
-                    INVALID_NAME_FOR_ACTION, nameStr, actionStr, "<type>[/<item-id>]");
+                WAZUH_LOG_ERROR(INVALID_NAME_FOR_ACTION, nameStr, actionStr, "<type>[/<item-id>]");
                 return;
             }
             if (!content.empty())
@@ -157,9 +153,7 @@ void singleRequest(const std::string& socketPath,
             }
             command = "validate";
             break;
-        default:
-            throw std::runtime_error(
-                fmt::format("Invalid action \"{}\" for a single request", actionStr));
+        default: throw std::runtime_error(fmt::format("Invalid action '{}' for a single request", actionStr));
     }
     command += "_catalog";
 
@@ -173,8 +167,7 @@ void singleRequest(const std::string& socketPath,
     if (!request.isValid())
     {
         // TODO: check this message
-        WAZUH_LOG_ERROR("Engine API Catalog: Malformed request: \"{}\".",
-                        request.toStr());
+        WAZUH_LOG_ERROR("Engine API Catalog: Malformed request: '{}'.", request.toStr());
         return;
     }
 
