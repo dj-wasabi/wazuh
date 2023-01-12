@@ -726,11 +726,11 @@ endif
 
 ${WAZUH_LIB_OUTPUT_PATH}${LIBSTDCPP_NAME}: ${libstdc++_path}
 	cp $< $@
-	${STRIP_TOOL} -x $@
+	${STRIP_TOOL} $@
 
 ${WAZUH_LIB_OUTPUT_PATH}${LIBGCC_S_NAME}: ${libgcc_s_path}
 	cp $< $@
-	${STRIP_TOOL} -x $@
+	${STRIP_TOOL} $@
 
 .PHONY: server local hybrid agent selinux
 
