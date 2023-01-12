@@ -1270,35 +1270,36 @@ void expand_wildcard_registers(char* entry,char** paths){
     free(*current_position);
 }
 
-char* get_subkey(char* key, char chrwildcard){
+char* get_subkey(char* key, char chrwildcard) {
 
-    char* rootkey   = strchr(key, '\\') + 1;
-    char* wildcard  = strchr(key, chrwildcard);
-    int   pathLen   = wildcard - rootkey;
-    char* subkey    = NULL;
+    char* rootkey = strchr(key, '\\') + 1;
+    char* wildcard = strchr(key, chrwildcard);
+    int   pathLen = wildcard - rootkey;
+    char* subkey = NULL;
 
-    os_calloc(pathLen + 1,sizeof(char),subkey);
+    os_calloc(pathLen + 1, sizeof(char), subkey);
     memcpy(subkey, rootkey, pathLen);
 
     if (subkey[pathLen - 1] == '\\') {
-
         subkey[pathLen - 1] = '\0';
     }
 
     subkey[pathLen] = '\0';
-    if (chrwildcard == '?' && strstr(subkey, "\\")) {
-        for (int letter = strlen(subkey) - 1; letter >= 0; letter--) {
-            if (subkey[letter] != '\\') {
-                subkey[letter] = '\0';
+    if (chrwildcard == '?') {
+        if (strstr(subkey, "\\")) {
+            for (int letter = strlen(subkey) - 1; letter >= 0; letter--) {
+                if (subkey[letter] != '\\') {
+                    subkey[letter] = '\0';
+                } else {
+                    subkey[letter] = '\0';
+                    return subkey;
+                }
             }
-            else {
-                subkey[letter] = '\0';
-                return subkey;
-            }
+        } else {
+            return "";
         }
-    }
-    else {
-        return NULL;
+    } else {
+        return subkey;
     }
 }
 
@@ -1404,35 +1405,26 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
     char* first_part            = strtok(aux_path, wildcard_str);
 
     if(wildcard_chr == '?'){
-        //Clean partial matcher
-        for (int chr = strlen(first_part) - 1; chr >= 0; chr--) {
-            if (first_part[chr] != '\\' && first_part[chr] != '?') {
+        //Search through all tokens until you find the one that has the wildcard
+        matcher = strdup(original_path);
 
-                first_part[chr] = '\0';
-                } else {
-
-                    break;
-                }
-        }
-
-        //Obtain the matcher word.
-        matcher = strdup(strchr((*array_struct)->path, '\\') + 1);
-
-        if (strchr(matcher, '\\')) {
-            matcher = extract_word_btw_patterns(matcher, "\\", "?");
-        }
-        else {
-            matcher[strlen(matcher) - 1] = '\0';
+        matcher = strtok(matcher, "\\");
+        while (!strchr(matcher, '?')) {
+            matcher = strtok(NULL,"\\");
         }
     }
 
     //Take the remainder part of the path.
-    char* second_part           = wildcard_chr == '*' ? strchr((*array_struct)->path, wildcard_chr) + OFFSET : strchr((*array_struct)->path, wildcard_chr) + OFFSET;
+    char* second_part           = strchr(strchr(original_path, wildcard_chr),'\\');
 
     //Duplicate key part
     char* str_root_key          = strdup(first_part);
-    //Obtain the subkey if it is possible.
-    char* subkey                = get_subkey((*array_struct)->path,wildcard_chr);
+    //Obtain the subkey. If it's empty, it's a NULL value.
+    char* subkey                = get_subkey((*array_struc)->path,wildcard_chr);
+
+    if(!strcmp(subkey,"")){
+        subkey = NULL;
+    }
         
     str_root_key                = strtok(str_root_key, "\\");
 
@@ -1458,8 +1450,9 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
             if (query_keys) {
                 //Itarate over string vector.
                 while (*query_keys != NULL) {
-
-                    if (strstr(*query_keys, matcher)){
+                    
+                    //Use Windows API and check wildcar coincidences.
+                    if (PathMatchSpecA(*query_keys, matcher)){
                         // ----- Begin final path variable section -----
 
                         char* full_path = NULL;
@@ -1472,7 +1465,7 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
                         strcat(full_path, *query_keys);
 
                         //Copy second part.
-                        strcat(full_path, second_part);
+                        second_part != NULL ? strcat(full_path, second_part) : strcat(full_path,"\0");
 
                         // ----- End final path variable section -----
 
