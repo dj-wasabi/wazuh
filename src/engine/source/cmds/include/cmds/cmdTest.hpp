@@ -29,7 +29,8 @@ void test(const std::string& kvdbPath,
           bool traceAll,
           const std::vector<std::string>& assetTrace,
           char protocolQueue,
-          const std::string& protocolLocation);
+          const std::string& protocolLocation,
+          const std::string& live_test_input_path);
 } // namespace cmd
 
 #endif // _CMD_TEST_HPP

@@ -20,11 +20,14 @@
 #include "registry.hpp"
 #include "server/wazuhStreamProtocol.hpp"
 #include "stackExecutor.hpp"
+#include <fstream>
+#include <sstream>
 
 namespace
 {
 std::atomic<bool> gs_doRun = true;
 cmd::StackExecutor g_exitHanlder {};
+static const std::string& kLiveTestingPathNull = "NULL";
 
 void sigint_handler(const int signum)
 {
@@ -43,8 +46,13 @@ void test(const std::string& kvdbPath,
           bool traceAll,
           const std::vector<std::string>& assetTrace,
           char protocolQueue,
-          const std::string& protocolLocation)
+          const std::string& protocolLocation,
+          const std::string& live_test_input_path
+)
 {
+    // Live Testing?
+    bool bIsLiveTesting = live_test_input_path != kLiveTestingPathNull;
+
     // Init logging
     logging::LoggingConfig logConfig;
     switch (logLevel)
@@ -229,19 +237,42 @@ void test(const std::string& kvdbPath,
         }
     }
 
+    std::ifstream infile;
+
+    if (bIsLiveTesting) 
+    {
+        infile.open(live_test_input_path, std::ifstream::in);
+        gs_doRun = infile.good();
+    }
+
     // Stdin loop
     while (gs_doRun)
     {
         std::cout << std::endl
                   << std::endl
-                  << "Enter a log in single line (Crtl+C to exit):" << std::endl
+                  << (bIsLiveTesting?"":"Enter a log in single line (Crtl+C to exit):") << std::endl
                   << std::endl;
         std::string line;
-        std::getline(std::cin, line);
-        if (line.empty())
+
+        if (bIsLiveTesting) 
+        {
+            std::getline(infile, line);
+        } 
+        else 
+        {
+            std::getline(std::cin, line);
+        }
+
+        if (!bIsLiveTesting && line.empty())
         {
             continue;
         }
+        if (bIsLiveTesting && line=="END") 
+        {
+            gs_doRun = false;
+            continue;
+        }
+        
         try
         {
             // Clear outputs

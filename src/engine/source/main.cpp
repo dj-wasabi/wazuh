@@ -89,7 +89,7 @@ std::string catalogContent;
 std::string catalogPath;
 std::string environmentTarget;
 bool catalogRecursive;
-
+std::string live_test_input_path;
 // Default values
 constexpr auto ENGINE_EVENT_SOCK = "/var/ossec/queue/sockets/queue";
 constexpr auto ENGINE_API_SOCK = "/var/ossec/queue/sockets/engine-api";
@@ -188,6 +188,12 @@ void configureSubcommandLogtest(std::shared_ptr<CLI::App> app)
         ->add_option(
             "-l, --protocol_location", args::protocol_location, "Protocol location.")
         ->default_val("/dev/stdin");
+
+    // Protocol location
+    logtest
+        ->add_option(
+            "-u, --use_file", args::live_test_input_path, "Live test input path.")
+        ->default_val("NULL");
 
     // Log level
     logtest
@@ -576,7 +582,8 @@ int main(int argc, char* argv[])
                       TraceAll,
                       assetTrace,
                       args::protocol_queue,
-                      args::protocol_location);
+                      args::protocol_location,
+                      args::live_test_input_path);
         }
         else if (app->get_subcommand(args::SUBCOMMAND_GRAPH)->parsed())
         {
