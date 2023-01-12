@@ -1220,7 +1220,7 @@ char* w_strcat_list(char ** list, char sep_char) {
     return concatenation;
 }
 
-char* extract_word_btw_patterns(char* string, char fst_pattern,char scd_pattern){
+char* extract_word_btw_patterns(char* string, char* fst_pattern,char* scd_pattern){
     char* word  = NULL;
     char* start = strstr(string, fst_pattern);
     char* end   =  NULL;

@@ -401,6 +401,6 @@ char* w_strcat_list(char ** list, char sep);
  * @param scd_pattern   Second separator.
  * @return Allocated word.
  */
-char* extract_word_btw_patterns(char* string, char fst_pattern,char scd_pattern);
+char* extract_word_btw_patterns(char* string, char* fst_pattern,char* scd_pattern);
 
 #endif
