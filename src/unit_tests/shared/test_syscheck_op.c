@@ -4411,6 +4411,133 @@ void test_get_registry_mtime_success(void **state) {
     assert_int_not_equal(retval, 0);
 }
 
+void test_get_subkey(void **state)
+{
+    //Scenario one, single * 
+    char* path_one = "HKEY_SOMETHING\\*\\A";
+    char* subkey_one = get_subkey(path_one, '*');
+
+    //Scenario two, something before *
+    char* path_two = "HKEY_SOMETHING\\A\\B\\*";
+    char* subkey_two = get_subkey(path_two, '*');
+
+    //Scenario three, single ? 
+    char* path_three = "HKEY_SOMETHING\\A?";
+    char* subkey_three = get_subkey(path_three, '?');
+
+    //Scenario four, something before ?
+    char* path_four = "HKEY_SOMETHING\\A\\B\\C?";
+    char* subkey_four = get_subkey(path_four, '?');
+
+    assert_string_equal(subkey_one,"");
+    assert_string_equal(subkey_two,"A\\B");
+    assert_string_equal(subkey_three, "");
+    assert_string_equal(subkey_four, "A\\B");
+}
+
+void test_w_is_still_a_wildcard(void **state) {
+    int ret;
+    reg_path_struct** test_vector_one = (reg_path_struct**)calloc(2, sizeof(reg_path_struct*));
+    test_vector_one[0] = (reg_path_struct*)calloc(1, sizeof(reg_path_struct));
+    test_vector_one[0]->has_wildcard = 0;
+    test_vector_one[0]->checked = 0;
+    test_vector_one[1] = NULL;
+
+    ret = w_is_still_a_wildcard(test_vector_one);
+
+    assert_int_equal(0, ret);
+
+    reg_path_struct** test_vector_two = (reg_path_struct**)calloc(2, sizeof(reg_path_struct*));
+    test_vector_two[0] = (reg_path_struct*)calloc(1, sizeof(reg_path_struct));
+    test_vector_two[0]->has_wildcard = 1;
+    test_vector_two[0]->checked = 1;
+    test_vector_two[1] = NULL;
+
+    ret = w_is_still_a_wildcard(test_vector_two);
+
+    assert_int_equal(0, ret);
+
+    reg_path_struct** test_vector_three = (reg_path_struct**)calloc(2, sizeof(reg_path_struct*));
+    test_vector_three[0] = (reg_path_struct*)calloc(1, sizeof(reg_path_struct));
+    test_vector_three[0]->has_wildcard = 1;
+    test_vector_three[0]->checked = 0;
+    test_vector_three[1] = NULL;
+
+    ret = w_is_still_a_wildcard(test_vector_three);
+
+    reg_path_struct** test_vector_four = (reg_path_struct**)calloc(2, sizeof(reg_path_struct*));
+    test_vector_four[0] = (reg_path_struct*)calloc(1, sizeof(reg_path_struct));
+    test_vector_four[0]->has_wildcard = 0;
+    test_vector_four[0]->checked = 1;
+    test_vector_four[1] = NULL;
+
+    ret = w_is_still_a_wildcard(test_vector_four);
+
+    assert_int_equal(0, ret);
+
+    free(test_vector_one[0]);
+    free(test_vector_two[0]);
+    free(test_vector_three[0]);
+    free(test_vector_four[0]);
+
+    free(test_vector_three);
+    free(test_vector_two);
+    free(test_vector_one);
+    free(test_vector_four);
+
+}
+
+void test_w_list_all_keys(void** state) {
+    HKEY root_key = HKEY_LOCAL_MACHINE;
+    
+    char* first_subkey = "HARDWARE";
+    char* result_first[4] = {
+        "ACPI",
+        "DESCRIPTION",
+        "DEVICEMAP",
+        "RESOURCEMAP"
+    };
+
+    char* second_subkey = NULL;
+    char* result_second[6] = {
+        "BCD00000000",
+        "HARDWARE",
+        "SAM",
+        "SECURITY",
+        "SOFTWARE",
+        "SYSTEM",
+    };
+
+    char** query_one = w_list_all_keys(root_key, first_subkey);
+
+    for (int idx = 0; idx < 4; idx++) {
+        assert_string_equal(query_one[idx], result_first[idx]);
+        free(query_one[idx]);
+    }
+    char** query_two = w_list_all_keys(root_key, second_subkey);
+
+    for (int idx = 0; idx < 6; idx++) {
+        assert_string_equal(query_two[idx], result_second[idx]);
+        free(query_two[idx]);
+    }
+}
+
+void test_w_switch_root_key(void** state) {
+    char* root_key_valid = "HKEY_LOCAL_MACHINE";
+
+    char* root_key_invalid = "HKEY_SOMETHING";
+
+    expect_any_always(__wrap__mdebug1, formatted_msg);
+
+    HKEY ret;
+
+    ret = w_switch_root_key(root_key_valid);
+    assert_int_equal(ret, HKEY_LOCAL_MACHINE);
+
+    ret = w_switch_root_key(root_key_invalid);
+    assert_null(ret);
+}
+
 #endif
 
 
@@ -4653,6 +4780,12 @@ int main(int argc, char *argv[]) {
         /* get_registry_mtime tests */
         cmocka_unit_test(test_get_registry_mtime_RegQueryInfoKeyA_fails),
         cmocka_unit_test(test_get_registry_mtime_success),
+
+        /* expand_wildcard_register */
+        cmocka_unit_test(test_get_subkey),
+        cmocka_unit_test(test_w_is_still_a_wildcard),
+        cmocka_unit_test(test_w_list_all_keys),
+        cmocka_unit_test(test_w_switch_root_key),
 #endif
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
