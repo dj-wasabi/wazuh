@@ -4487,19 +4487,41 @@ void test_w_is_still_a_wildcard(void **state) {
 
 }
 
-void test_w_list_all_keys(void** state) {
+void test_w_list_all_keys_subkey_notnull(void** state) {
     HKEY root_key = HKEY_LOCAL_MACHINE;
+    HKEY keyhandle;
+    FILETIME last_write_time = { 0, 1000 };
     
-    char* first_subkey = "HARDWARE";
-    char* result_first[4] = {
+    char* subkey = "HARDWARE";
+    char* result[4] = {
         "ACPI",
         "DESCRIPTION",
         "DEVICEMAP",
         "RESOURCEMAP"
     };
 
-    char* second_subkey = NULL;
-    char* result_second[6] = {
+    expect_RegOpenKeyEx_call(root_key, subkey, 0, KEY_READ, NULL, ERROR_SUCCESS);
+    expect_RegQueryInfoKey_call(4, 0, &last_write_time, ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("ACPI",5,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("DESCRIPTION",12,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("DEVICEMAP",10,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("RESOURCEMAP",12,ERROR_SUCCESS);
+
+    char** query_result = w_list_all_keys(root_key, subkey);
+
+    for (int idx = 0; idx < 4; idx++) {
+        assert_string_equal(query_result[idx], result[idx]);
+        free(query_result[idx]);
+    }
+}
+
+void test_w_list_all_keys_subkey_null(void** state) {
+    HKEY root_key = HKEY_LOCAL_MACHINE;
+    HKEY keyhandle;
+    FILETIME last_write_time = { 0, 1000 };
+
+    char* subkey = "";
+    char* result[6] = {
         "BCD00000000",
         "HARDWARE",
         "SAM",
@@ -4508,17 +4530,20 @@ void test_w_list_all_keys(void** state) {
         "SYSTEM",
     };
 
-    char** query_one = w_list_all_keys(root_key, first_subkey);
+    expect_RegOpenKeyEx_call(root_key, subkey, 0, KEY_READ, NULL, ERROR_SUCCESS);
+    expect_RegQueryInfoKey_call(6, 0, &last_write_time, ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("BCD00000000",12,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("HARDWARE",9,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("SAM",4,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("SECURITY",9,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("SOFTWARE",9,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("SYSTEM",7,ERROR_SUCCESS);
 
-    for (int idx = 0; idx < 4; idx++) {
-        assert_string_equal(query_one[idx], result_first[idx]);
-        free(query_one[idx]);
-    }
-    char** query_two = w_list_all_keys(root_key, second_subkey);
+    char** query_result = w_list_all_keys(root_key, subkey);
 
     for (int idx = 0; idx < 6; idx++) {
-        assert_string_equal(query_two[idx], result_second[idx]);
-        free(query_two[idx]);
+        assert_string_equal(query_result[idx], result[idx]);
+        free(query_result[idx]);
     }
 }
 
@@ -4784,8 +4809,9 @@ int main(int argc, char *argv[]) {
         /* expand_wildcard_register */
         cmocka_unit_test(test_get_subkey),
         cmocka_unit_test(test_w_is_still_a_wildcard),
-        cmocka_unit_test(test_w_list_all_keys),
-        cmocka_unit_test(test_w_switch_root_key),
+        cmocka_unit_test(test_w_list_all_keys_subkey_notnull),
+        cmocka_unit_test(test_w_list_all_keys_subkey_null),
+        cmocka_unit_test(test_w_switch_root_key)
 #endif
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
