@@ -1401,12 +1401,20 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
     //Create a copy of the path to be able to modify it.
     char* aux_path              = strdup((*array_struct)->path);
 
-    //Take the first part of the wildcard, splitting by wildcard.
+    //Take the first part of the wildcard, splitting by wildcard. Clean any chars after a slash bar.
     char* first_part            = strtok(aux_path, wildcard_str);
+    for (int letter = strlen(first_part) - 1; letter >= 0; letter--) {
+        if (first_part[letter] != '\\') {
+            first_part[letter] = '\0';
+        }
+        else {
+            break;
+        }
+    }
 
     if(wildcard_chr == '?'){
         //Search through all tokens until you find the one that has the wildcard
-        matcher = strdup(original_path);
+        matcher = strdup((*array_struct)->path);
 
         matcher = strtok(matcher, "\\");
         while (!strchr(matcher, '?')) {
@@ -1415,12 +1423,12 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
     }
 
     //Take the remainder part of the path.
-    char* second_part           = strchr(strchr(original_path, wildcard_chr),'\\');
+    char* second_part           = strchr(strchr((*array_struct)->path, wildcard_chr),'\\');
 
     //Duplicate key part
     char* str_root_key          = strdup(first_part);
     //Obtain the subkey. If it's empty, it's a NULL value.
-    char* subkey                = get_subkey((*array_struc)->path,wildcard_chr);
+    char* subkey                = get_subkey((*array_struct)->path,wildcard_chr);
 
     if(!strcmp(subkey,"")){
         subkey = NULL;
@@ -1510,13 +1518,9 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
 
                     //Add key result.
                     strcat(full_path, *query_keys);
-                    //Check if necessary add a slash bar
-                    if (!strchr(second_part, '\\')) {
-                        strcat(full_path, "\\");
-                    }
 
                     //Copy second part.
-                    strcat(full_path, second_part);
+                    second_part != NULL ? strcat(full_path, second_part) : strcat(full_path, "\0");
 
                     // ----- End final path variable section -----
 
