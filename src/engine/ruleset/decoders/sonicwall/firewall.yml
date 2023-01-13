@@ -20,6 +20,10 @@ parse:
         <~log.timestamp/date/%b %d %T> <host.ip> id=<~log.id> sn=<~log.sn> time="<@timestamp/%F %H:%M:%6S>" fw=<~log.fw>
         pri=<~log.pri> c=<~log.c> m=<event.code> msg="<event.action>" n=<~log.n> src=<source.ip>:<source.port>:<network.type>
         dst=<~log.dst> proto=<network.protocol>/<~log.proto>
+    - event.original: >-
+        <~log.timestamp/date/%b %d %T> <host.ip> id=<~log.id> sn=<~log.sn> time="<@timestamp/%F %H:%M:%6S>" fw=<~log.fw>
+        pri=<~log.pri> c=<~log.c> m=<event.code> msg="<event.action>" n=<~log.n> src=<source.ip>:<source.port>:<network.type>
+        dst=<~log.dst>
 
 normalize:
   - map:
@@ -40,7 +44,8 @@ normalize:
     map:
       - rsa.internal.event_desc: $event.action
       - rsa.internal.msg: $event.action
-      - rsa.network.sinterface: +s_concat/$network.type/ dst=/$~log.dst/ proto=/$network.protocol/ / /$~log.proto
+      - ~aux_slash: '/'
+      - rsa.network.sinterface: +s_concat/$network.type/ dst=/$~log.dst/ proto=/$network.protocol/$~aux_slash/$~log.proto
       - observer.ingress.interface.name: $rsa.network.sinterface
       - related.ip: +a_append/$source.ip
       - event.action: +ef_delete
@@ -54,3 +59,4 @@ normalize:
       - host: +ef_delete
       - network: +ef_delete
       - ~log: +ef_delete
+      - ~aux_slash: +ef_delete
