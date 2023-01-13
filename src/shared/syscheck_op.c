@@ -1206,7 +1206,7 @@ HKEY w_switch_root_key(char* str_rootkey){
         return HKEY_USERS;
     }
     else {
-        mdebug1("Uncontrolled condition when parsing a Windows rootkey register");
+        mdebug1("Invalid value of 'HKEY'. Please check your ossec.conf.");
         return NULL;
     }
 }
