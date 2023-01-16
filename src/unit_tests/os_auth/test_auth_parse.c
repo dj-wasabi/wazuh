@@ -85,6 +85,7 @@ parse_evaluator parse_values_default_cfg [] = {
     { "OSSEC PASS: pass124 OSSEC A:'agent0'", "192.0.0.1", NULL,        {NULL, NULL, NULL, NULL}, {OS_INVALID,"ERROR: Invalid request for new agent"}, {"Invalid request for new agent from: 192.0.0.1", NULL, NULL, NULL} },
     { "OSSEC A:''", "192.0.0.1", NULL,                                  {NULL, NULL, NULL, NULL}, {OS_INVALID,"ERROR: Invalid agent name: "},          {"Invalid agent name:  from 192.0.0.1", NULL, "Received request for a new agent () from: 192.0.0.1", NULL} },
     { "OSSEC A:'inv;agent'", "192.0.0.1", NULL,                         {NULL, NULL, NULL, NULL}, {OS_INVALID,"ERROR: Invalid agent name: inv;agent"}, {"Invalid agent name: inv;agent from 192.0.0.1", NULL, "Received request for a new agent (inv;agent) from: 192.0.0.1", NULL} },
+    { "OSSEC A:'agent3' V:'v4.5.0", "192.0.0.1", NULL,                  {NULL, NULL, NULL, NULL}, {OS_INVALID,"ERROR: Unterminated version field"},    {"Unterminated version field", NULL, "Received request for a new agent (agent3) from: 192.0.0.1", NULL} },
 
     {0}
 };

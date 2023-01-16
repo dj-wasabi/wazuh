@@ -189,7 +189,6 @@ static int test_process_multi_groups_group_changed_setup(void ** state) {
 }
 
 static int test_process_multi_groups_group_not_changed_setup(void ** state) {
-
     os_calloc(1, (2) * sizeof(group_t *), multi_groups);
     os_calloc(1, sizeof(group_t), multi_groups[0]);
     multi_groups[0]->name = strdup("group1,group2");
@@ -1011,7 +1010,6 @@ void test_c_multi_group_Ignore_hidden_files(void **state)
     expect_value(__wrap_w_copy_file, mode, 0x63);
     expect_value(__wrap_w_copy_file, silent, 1);
     will_return(__wrap_w_copy_file, 0);
-
 
     expect_any(__wrap_OSHash_Get, self);
     expect_string(__wrap_OSHash_Get, key, "etc/shared/multi_group_test/agent.conf");
@@ -2767,7 +2765,6 @@ void test_validate_shared_files_fail_add(void **state)
 
     expect_string(__wrap__merror, formatted_msg, "Unable to add file 'etc/shared/test_default/test-file' to hash table of invalid files.");
 
-
     validate_shared_files("etc/shared/test_default", "test_default", "merged_tmp", &f_sum, &f_size, false, -1);
     groups[0]->f_sum = f_sum;
 
@@ -2802,7 +2799,6 @@ void test_validate_shared_files_subfolder_empty(void **state)
     will_return(__wrap_wreaddir, NULL);
 
     expect_string(__wrap__mdebug1, formatted_msg, "At validate_shared_files(): Could not open directory 'etc/shared/test_default/test-subfolder'");
-
 
     validate_shared_files("etc/shared/test_default", "test_default", "merged_tmp", &f_sum, &f_size, false, -1);
     groups[0]->f_sum = f_sum;
@@ -2922,7 +2918,6 @@ void test_validate_shared_files_valid_file_subfolder_empty(void **state)
     will_return(__wrap_wreaddir, NULL);
 
     expect_string(__wrap__mdebug1, formatted_msg, "At validate_shared_files(): Could not open directory 'etc/shared/test_default/test-subfolder'");
-
 
     validate_shared_files("etc/shared/test_default", "test_default", "merged_tmp", &f_sum, &f_size, false, -1);
     groups[0]->f_sum = f_sum;
@@ -3613,7 +3608,6 @@ void test_save_controlmsg_request_error(void **state)
     save_controlmsg(key, r_msg, msg_length, wdb_sock);
 }
 
-
 void test_save_controlmsg_request_success(void **state)
 {
     char r_msg[OS_SIZE_128] = {0};
@@ -3639,7 +3633,6 @@ void test_save_controlmsg_request_success(void **state)
 
 void test_save_controlmsg_invalid_msg(void **state)
 {
-
     char r_msg[OS_SIZE_128] = {0};
     strcpy(r_msg, "Invalid message");
 
@@ -3658,7 +3651,6 @@ void test_save_controlmsg_invalid_msg(void **state)
 
 void test_save_controlmsg_agent_invalid_version(void **state)
 {
-
     char r_msg[OS_SIZE_128] = {0};
     char s_msg[OS_FLSIZE + 1] = {0};
     strcpy(r_msg, "agent startup {\"version\":\"v4.6.0\"}");
@@ -3678,7 +3670,7 @@ void test_save_controlmsg_agent_invalid_version(void **state)
     expect_value(__wrap_compare_wazuh_versions, compare_patch, false);
     will_return(__wrap_compare_wazuh_versions, -1);
 
-    expect_string(__wrap__mdebug2, formatted_msg, "Unable to connect agent: 001. Incompatible version");
+    expect_string(__wrap__mdebug2, formatted_msg, "Unable to connect agent: '001': 'Incompatible version'");
 
     expect_value(__wrap_wdb_update_agent_status_code, id, 1);
     expect_value(__wrap_wdb_update_agent_status_code, status_code, INVALID_VERSION);
@@ -3696,7 +3688,6 @@ void test_save_controlmsg_agent_invalid_version(void **state)
 
 void test_save_controlmsg_get_agent_version_fail(void **state)
 {
-
     char r_msg[OS_SIZE_128] = {0};
     char s_msg[OS_FLSIZE + 1] = {0};
     strcpy(r_msg, "agent startup {\"test\":\"fail\"}");
@@ -3712,11 +3703,10 @@ void test_save_controlmsg_get_agent_version_fail(void **state)
     expect_string(__wrap__mdebug1, formatted_msg, "Agent NEW_AGENT sent HC_STARTUP from ''");
     expect_string(__wrap__merror, formatted_msg, "Error getting version from agent '001'");
 
-    expect_string(__wrap__mdebug2, formatted_msg, "Unable to connect agent: 001. Couldn't retrieve version");
+    expect_string(__wrap__mdebug2, formatted_msg, "Unable to connect agent: '001': 'Couldn't retrieve version'");
 
     expect_value(__wrap_wdb_update_agent_status_code, id, 1);
     expect_value(__wrap_wdb_update_agent_status_code, status_code, ERR_VERSION_RECV);
-    expect_string(__wrap_wdb_update_agent_status_code, version, "");
     expect_string(__wrap_wdb_update_agent_status_code, sync_status, "synced");
     will_return(__wrap_wdb_update_agent_status_code, OS_SUCCESS);
 
