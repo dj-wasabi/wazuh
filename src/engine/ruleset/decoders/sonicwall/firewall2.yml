@@ -1,0 +1,72 @@
+---
+name: decoder/firewall2/0
+
+metadata:
+  module: firewall
+  title: Firewall logs decoder
+  description: Decoder for Linux firewall logs
+  author:
+    name: Wazuh Inc. info@wazuh.com
+    date: 2023-01-12
+  references:
+    - https://docs.rs/redis-module/latest/redis_module/logging/index.html
+
+# Example firewall logs:
+
+parse:
+  logpar:
+    # undeom id=emullamc sn=tec time="2019/04/15 07:40:49" fw=10.29.118.7 pri=medium c=mveleum m=537 msg="accept" f=exercita n=sBonorum src= 10.132.171.15 dst= 10.107.216.138:3147:lo5057:ugitsedq5067.internal.test proto=rdp sent=5943 rcvd=1635
+    - event.original: >-
+        <~log.start_message> time="<@timestamp/%Y\/%m\/%d %H:%M:%S>" <~log.fill> m=<event.code> msg="<event.action>" <~log.fill>
+        src=<~/ignore/ ><source.ip> dst=<~/ignore/ ><destination.ip>:<destination.port>:<observer.egress.interface.name>:<destination.address>
+        proto=<network.protocol> sent=<source.bytes> rcvd=<destination.bytes>
+    # id=ntutlabo sn=iusmodte time="2018-6-19 3:46:49" fw=10.108.84.24 pri=low c=iosamnis m=606 msg="volupt" n=rem src=10.113.100.237:3887:eth163 dst=10.251.248.228:6909 srcMac= 01:00:5e:8b:c1:b4 dstMac=01:00:5e:c3:ed:55 proto=udp fw_action="deny"
+    - event.original: >-
+        id=<event.code> sn=<~rsa.misc.serial_number> time="<@timestamp/%Y-%m-%d %H:%M:%S>" fw=<host.ip> pri=<log.level> c=<~rsa.misc.category> m=<event.code> msg="<event.action>"
+        n=<~rsa.misc.ntype> src=<~/ignore/ ><source.ip>:<source.port><observer.ingress.interface.name> dst=<~/ignore/ ><destination.ip>:<destination.port>
+        srcMac=<~/ignore/ ><source.mac> dstMac=<destination.mac> proto=<network.protocol> fw_action="<event.action>"
+
+normalize:
+  - map:
+      - event.kind: event
+      - event.module: sonicwall
+      - event.dataset: sonicwall.firewall
+      - fileset.name: firewall
+      - input.type: log
+      - observer.product: Firewalls
+      - observer.type: Firewall
+      - observer.vendor: Sonicwall
+      - rsa.internal.messageid: $event.code
+      - rsa.time.event_time": $@timestamp
+      - tags: +a_append/forwarded/sonicwall.firewall
+  - check:
+      - event.action: +s_ne/accept
+      - event.action: +s_ne/allow
+      - event.action: +s_ne/block
+      - event.action: +s_ne/cancel
+      - event.action: +s_ne/deny
+    map:
+      - event.action: +ef_delete
+  - check:
+      - source.ip: +ef_exists
+      - source.ip: +ef_exists
+    map:
+      - rsa.internal.event_desc: $event.action
+      - rsa.internal.msg: $event.action
+      - ~aux_slash: '/'
+      - rsa.network.sinterface: +s_concat/$network.type/ dst=/$~log.dst/ proto=/$network.protocol/$~aux_slash/$~log.proto
+      - observer.ingress.interface.name: $rsa.network.sinterface
+      - related.ip: +a_append/$source.ip
+      - event.action: +ef_delete
+  - check:
+      - event.action: +ef_exists
+    map:
+      - rsa.misc.action: +a_append/$event.action
+      - source.ip: +ef_delete
+      - source.port: +ef_delete
+  - map:
+      - host: +ef_delete
+      - network: +ef_delete
+      - ~log: +ef_delete
+      - ~aux_slash: +ef_delete
+
