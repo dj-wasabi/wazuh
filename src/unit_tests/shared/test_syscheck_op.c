@@ -4548,19 +4548,75 @@ void test_w_list_all_keys_subkey_null(void** state) {
 }
 
 void test_w_switch_root_key(void** state) {
-    char* root_key_valid = "HKEY_LOCAL_MACHINE";
+    char* root_key_valid_lm = "HKEY_LOCAL_MACHINE";
+    char* root_key_valid_cr = "HKEY_CLASSES_ROOT";
+    char* root_key_valid_cc = "HKEY_CURRENT_CONFIG";
+    char* root_key_valid_us = "HKEY_USERS";
+    char* root_key_valid_cu = "HKEY_CURRENT_USER";
 
-    char* root_key_invalid = "HKEY_SOMETHING";
+    char* root_key_invalid  = "HKEY_SOMETHING";
 
     expect_any_always(__wrap__mdebug1, formatted_msg);
 
     HKEY ret;
 
-    ret = w_switch_root_key(root_key_valid);
+    ret = w_switch_root_key(root_key_valid_lm);
     assert_int_equal(ret, HKEY_LOCAL_MACHINE);
+
+    ret = w_switch_root_key(root_key_valid_cr);
+    assert_int_equal(ret, HKEY_CLASSES_ROOT);
+
+    ret = w_switch_root_key(root_key_valid_cc);
+    assert_int_equal(ret, HKEY_CURRENT_CONFIG);
+
+    ret = w_switch_root_key(root_key_valid_us);
+    assert_int_equal(ret, HKEY_USERS);
+
+    ret = w_switch_root_key(root_key_valid_cu);
+    assert_int_equal(ret, HKEY_CURRENT_USER);
 
     ret = w_switch_root_key(root_key_invalid);
     assert_null(ret);
+}
+
+void test_expand_wildcard_registers_star_only(void **state){
+    char* entry     = "HKEY_LOCAL_MACHINE\\*";
+    char** paths    = NULL;
+    os_calloc(OS_SIZE_1024,sizeof(char*),paths);
+    char* subkey    = "";
+    HKEY root_key   = HKEY_LOCAL_MACHINE;
+
+    char* result[6] = {
+        "HKEY_LOCAL_MACHINE\\BCD00000000",
+        "HKEY_LOCAL_MACHINE\\HARDWARE",
+        "HKEY_LOCAL_MACHINE\\SAM",
+        "HKEY_LOCAL_MACHINE\\SECURITY",
+        "HKEY_LOCAL_MACHINE\\SOFTWARE",
+        "HKEY_LOCAL_MACHINE\\SYSTEM",
+    };
+
+    HKEY keyhandle;
+    FILETIME last_write_time = { 0, 1000 };
+
+    expect_RegOpenKeyEx_call(root_key, subkey, 0, KEY_READ, NULL, ERROR_SUCCESS);
+    expect_RegQueryInfoKey_call(6, 0, &last_write_time, ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("BCD00000000",12,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("HARDWARE",9,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("SAM",4,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("SECURITY",9,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("SOFTWARE",9,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("SYSTEM",7,ERROR_SUCCESS);
+
+    expand_wildcard_registers(entry,paths);
+
+    int i = 0;
+    while(*paths != NULL){
+        assert_string_equal(*paths, result[i]);
+        free(*paths);
+        paths++;
+        i++;
+    }
+    
 }
 
 #endif
@@ -4811,7 +4867,8 @@ int main(int argc, char *argv[]) {
         cmocka_unit_test(test_w_is_still_a_wildcard),
         cmocka_unit_test(test_w_list_all_keys_subkey_notnull),
         cmocka_unit_test(test_w_list_all_keys_subkey_null),
-        cmocka_unit_test(test_w_switch_root_key)
+        cmocka_unit_test(test_w_switch_root_key),
+        cmocka_unit_test(test_expand_wildcard_registers_star_only),
 #endif
     };
     return cmocka_run_group_tests(tests, NULL, NULL);

@@ -1199,9 +1199,6 @@ HKEY w_switch_root_key(char* str_rootkey){
     else if (!strcmp(str_rootkey, STR_HKEY_LOCAL_MACHINE)) {
         return HKEY_LOCAL_MACHINE;
     }
-    else if (!strcmp(str_rootkey, STR_HKEY_PERFORMANCE_DATA)) {
-        return HKEY_PERFORMANCE_DATA;
-    }
     else if (!strcmp(str_rootkey, STR_HKEY_USERS)) {
         return HKEY_USERS;
     }
