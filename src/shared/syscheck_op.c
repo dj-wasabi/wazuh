@@ -1336,7 +1336,7 @@ char** w_list_all_keys(HKEY root_key, char* str_subkey){
         DWORD i, retCode;
 
         // Get the class name and the value count. 
-        retCode = RegQueryInfoKey(
+        RegQueryInfoKey(
             keyhandle,               // key handle 
             achClass,                // buffer for class name 
             &cchClassName,           // size of class string 
@@ -1495,8 +1495,10 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
                     query_keys++;
                     }
                 }
-            }
 
+            //Release memory before leaves function.
+            free(matcher);
+        }
     } else {
         if (root_key != NULL) {
             //Get all keys from Windows API.
@@ -1542,6 +1544,12 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
                 }
             }
     }
+
+    //Release memory after leaves function. Common variables
+    free(wildcard_str);
+    free(aux_path);
+    free(str_root_key);
+    free(subkey);
 }
 
 #endif /* # else (ifndef WIN32) */

@@ -4616,6 +4616,30 @@ void test_expand_wildcard_registers_star_only(void **state){
         paths++;
         i++;
     }
+}
+
+void test_expand_wildcard_registers_invalid_path(void **state){
+    char* entry     = "HKEY_LOCAL_MACHINE\\????";
+    char** paths    = NULL;
+    os_calloc(OS_SIZE_1024,sizeof(char*),paths);
+    char* subkey    = "";
+    HKEY root_key   = HKEY_LOCAL_MACHINE;
+
+    FILETIME last_write_time = { 0, 1000 };
+
+    expect_RegOpenKeyEx_call(root_key, subkey, 0, KEY_READ, NULL, ERROR_SUCCESS);
+    expect_RegQueryInfoKey_call(6, 0, &last_write_time, ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("BCD00000000",12,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("HARDWARE",9,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("SAM",4,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("SECURITY",9,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("SOFTWARE",9,ERROR_SUCCESS);
+    expect_RegEnumKeyEx_call("SYSTEM",7,ERROR_SUCCESS);
+
+    expand_wildcard_registers(entry,paths);
+
+    assert_null(*paths);
+    free(paths);
     
 }
 
@@ -4869,6 +4893,7 @@ int main(int argc, char *argv[]) {
         cmocka_unit_test(test_w_list_all_keys_subkey_null),
         cmocka_unit_test(test_w_switch_root_key),
         cmocka_unit_test(test_expand_wildcard_registers_star_only),
+        cmocka_unit_test(test_expand_wildcard_registers_invalid_path),
 #endif
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
