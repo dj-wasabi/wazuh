@@ -1426,10 +1426,6 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
     char* str_root_key          = strdup(first_part);
     //Obtain the subkey. If it's empty, it's a NULL value.
     char* subkey                = get_subkey((*array_struct)->path,wildcard_chr);
-
-    if(!strcmp(subkey,"")){
-        subkey = NULL;
-    }
         
     str_root_key                = strtok(str_root_key, "\\");
 
