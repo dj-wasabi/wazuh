@@ -651,63 +651,69 @@ int Read_Localfile(XML_NODE node, void *d1, __attribute__((unused)) void *d2)
             int file = 0;
 
             char** result = expand_win32_wildcards(logf[pl].file);
-            char** expand_files;
+            char** expand_files = NULL;
 
-            while (NULL != result[totalFiles++])
-                ;
+            if(result)
+            {
+                while (NULL != result[totalFiles++])
+                    ;
 
-            totalFiles %= maximum_files;
+                totalFiles %= maximum_files;
 
-            os_calloc(totalFiles, sizeof(char*), expand_files);
-            totalFiles = 0;
-            
-            while (NULL != result[file]) {
-                if (file_exist(result[file])) {
-                    mdebug2("Read_Localfile strdup:%s", result[file]);    
-                    os_strdup(result[file], expand_files[totalFiles++]);
-                }
-
-                file++;
-            }
-
-            file = 0;
-            
-            while(file < totalFiles) {
-
-                os_free(logf[pl].file);
-                os_strdup(expand_files[file], logf[pl].file);
-
-                os_realloc(log_config->globs, (gl + 2)*sizeof(logreader_glob), log_config->globs);
-                os_strdup(logf[pl].file, log_config->globs[gl].gpath);
-
-
-                memset(&log_config->globs[gl + 1], 0, sizeof(logreader_glob));
-                os_calloc(1, sizeof(logreader), log_config->globs[gl].gfiles);
-
-                memcpy(log_config->globs[gl].gfiles, &logf[pl], sizeof(logreader));
-                log_config->globs[gl].gfiles->file = NULL;
-
-                /* Wildcard exclusion, check for date */
-                if (logf[pl].exclude && strchr(logf[pl].exclude, '%')) {
-
-                    time_t l_time = time(0);
-                    char excluded_path_date[PATH_MAX] = {0};
-                    size_t ret;
-                    struct tm tm_result = { .tm_sec = 0 };
-
-                    localtime_r(&l_time, &tm_result);
-                    ret = strftime(excluded_path_date, PATH_MAX, logf[pl].exclude, &tm_result);
-                    if (ret != 0) {
-                        os_strdup(excluded_path_date, log_config->globs[gl].exclude_path);
+                os_calloc(totalFiles, sizeof(char*), expand_files);
+                totalFiles = 0;
+                
+                while (NULL != result[file]) {
+                    if (file_exist(result[file])) {
+                        mdebug2("Read_Localfile strdup:%s", result[file]);    
+                        os_strdup(result[file], expand_files[totalFiles++]);
                     }
-                }
-                else if (logf[pl].exclude) {
-                    os_strdup(logf[pl].exclude, log_config->globs[gl].exclude_path);
+
+                    file++;
                 }
 
-                gl++;
-                file++;
+                file = 0;
+           
+                while(file < totalFiles) {
 
+                    os_free(logf[pl].file);
+                    os_strdup(expand_files[file], logf[pl].file);
+
+                    os_realloc(log_config->globs, (gl + 2)*sizeof(logreader_glob), log_config->globs);
+                    os_strdup(logf[pl].file, log_config->globs[gl].gpath);
+
+
+                    memset(&log_config->globs[gl + 1], 0, sizeof(logreader_glob));
+                    os_calloc(1, sizeof(logreader), log_config->globs[gl].gfiles);
+
+                    memcpy(log_config->globs[gl].gfiles, &logf[pl], sizeof(logreader));
+                    log_config->globs[gl].gfiles->file = NULL;
+
+                    /* Wildcard exclusion, check for date */
+                    if (logf[pl].exclude && strchr(logf[pl].exclude, '%')) {
+
+                        time_t l_time = time(0);
+                        char excluded_path_date[PATH_MAX] = {0};
+                        size_t ret;
+                        struct tm tm_result = { .tm_sec = 0 };
+
+                        localtime_r(&l_time, &tm_result);
+                        ret = strftime(excluded_path_date, PATH_MAX, logf[pl].exclude, &tm_result);
+                        if (ret != 0) {
+                            os_strdup(excluded_path_date, log_config->globs[gl].exclude_path);
+                        }
+                    }
+                    else if (logf[pl].exclude) {
+                        os_strdup(logf[pl].exclude, log_config->globs[gl].exclude_path);
+                    }
+
+                    gl++;
+                    file++;
+
+                }
+
+                os_free(expand_files);
+                os_free(result);
             }
 
             if (Remove_Localfile(&logf, pl, 0, 0,NULL)) {
@@ -717,8 +723,6 @@ int Read_Localfile(XML_NODE node, void *d1, __attribute__((unused)) void *d2)
 
              log_config->config = logf;
 
-            os_free(expand_files);
-            os_free(result);
             return 0;
 
 #else
