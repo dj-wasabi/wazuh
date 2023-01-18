@@ -1265,6 +1265,7 @@ void expand_wildcard_registers(char* entry,char** paths){
 
     //Release memory before leaves function
     free(*current_position);
+    free(aux_vector);
 }
 
 char* get_subkey(char* key, char chrwildcard) {
@@ -1293,11 +1294,13 @@ char* get_subkey(char* key, char chrwildcard) {
                 }
             }
         } else {
-            return "";
+            free(subkey);
+            return strdup("");
         }
     } else {
         return subkey;
     }
+    free(subkey);
 }
 
 int w_is_still_a_wildcard(reg_path_struct **array_struct){
@@ -1410,24 +1413,29 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
     }
 
     if(wildcard_chr == '?'){
+        char* temp = NULL;
+        os_strdup((*array_struct)->path,temp);
         //Search through all tokens until you find the one that has the wildcard
-        matcher = strdup((*array_struct)->path);
 
-        matcher = strtok(matcher, "\\");
+        matcher = strtok(temp, "\\");
         while (!strchr(matcher, '?')) {
             matcher = strtok(NULL,"\\");
         }
+        free(temp);
     }
 
     //Take the remainder part of the path.
     char* second_part           = strchr(strchr((*array_struct)->path, wildcard_chr),'\\');
 
     //Duplicate key part
-    char* str_root_key          = strdup(first_part);
+    char* temp = NULL;
+    os_strdup(first_part,temp);
+    char* str_root_key          = NULL;
     //Obtain the subkey. If it's empty, it's a NULL value.
     char* subkey                = get_subkey((*array_struct)->path,wildcard_chr);
         
-    str_root_key                = strtok(str_root_key, "\\");
+    os_strdup(strtok(temp, "\\"),str_root_key);
+    free(temp);
 
     HKEY root_key               = w_switch_root_key(str_root_key);
     
@@ -1448,6 +1456,7 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
         if (root_key != NULL && matcher != NULL) {
             //Get all keys from Windows API.
             char** query_keys = w_list_all_keys(root_key, subkey);
+            char** first_position = query_keys;
             if (query_keys) {
                 //Itarate over string vector.
                 while (*query_keys != NULL) {
@@ -1490,6 +1499,7 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
                     //Increment pointers.
                     query_keys++;
                     }
+                free(first_position);
                 }
 
             //Release memory before leaves function.
@@ -1499,6 +1509,7 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
         if (root_key != NULL) {
             //Get all keys from Windows API.
             char** query_keys = w_list_all_keys(root_key, subkey);
+            char** first_position = query_keys;
             if (query_keys) {
                 //Itarate over string vector.
                 while (*query_keys != NULL) {
@@ -1537,6 +1548,7 @@ void w_expand_by_wildcard(reg_path_struct **array_struct,char wildcard_chr){
                     first_empty++;
                     query_keys++;
                     }
+                free(first_position);
                 }
             }
     }
