@@ -1511,211 +1511,110 @@ int check_pattern_expand(int do_seek) {
     int i, j;
     int retval = 0;
 
-    const char *szTag = "***** CHECK_PATTERN_EXPAND  ****";
-    minfo("%s globs :%p", szTag, globs);
-
-
     if (globs) {
 
-        //minfo("%s globs[j].gpath :%s", szTag, globs[j].gpath);
-
         for (j = 0; globs[j].gpath; j++) {
-
-
-            minfo("%s globs[j].gpath: %s ", szTag, globs[j].gpath);
 
             if (current_files >= maximum_files) {
                 break;
             }
 
-            char full_path[PATH_MAX] = {0};
-            char *global_path = NULL;
-//            char *wildcard = NULL;
+            char *full_path = NULL;
 
-            os_strdup(globs[j].gpath,global_path);
+            os_strdup(globs[j].gpath, full_path);
 
+            mdebug2("check_pattern_expand->full_path :%s ", full_path);
 
-  //          wildcard = strrchr(global_path,'\\');
-
-
-
-//              if ( wildcard ) {
-
-//                 DIR *dir = NULL;
-//                 struct dirent *dirent = NULL;
-
-//                 //minfo("%s wildcard: %s ", szTag, wildcard);
-
-//                 *wildcard = '\0';
-//                 wildcard++;
-
-//                 if (dir = opendir(global_path), !dir) {
-//                     merror("Couldn't open directory '%s' due to: %s", global_path, win_strerror(WSAGetLastError()));
+            found = 0;
+            for (i = 0; globs[j].gfiles[i].file; i++) {
+                if (!strcmp(globs[j].gfiles[i].file, full_path)) {
+                    found = 1;
+                    break;
+                }
+            }
 
 
-//                     os_free(global_path);
-//                     continue;
-//                 }
+            if (!found) {
+                retval = 1;
+                int added = 0;
 
-//                 while (dirent = readdir(dir), dirent) {
+                char *ex_file = OSHash_Get(excluded_files,full_path);
 
-//                     //minfo("%s dirent->name: %s ", szTag, dirent->d_name);
+                mdebug2("check_pattern_expand !found -> OSHash_Get()=ex_file:%s ", ex_file);
 
-//                     // Skip "." and ".."
-//                     if (dirent->d_name[0] == '.' && (dirent->d_name[1] == '\0' || (dirent->d_name[1] == '.' && dirent->d_name[2] == '\0'))) {
-//                         continue;
-//                     }
+                if(!ex_file) {
 
-//                     if (current_files >= maximum_files) {
-//                         mwarn(FILE_LIMIT, maximum_files);
-//                         break;
-//                     }
+                    /*  Because Windows cache's files, we need to check if the file
+                        exists. Deleted files can still appear due to caching */
+                    HANDLE h1;
 
-//                     char full_path[PATH_MAX] = {0};
-//                     snprintf(full_path,PATH_MAX,"%s\\%s",global_path,dirent->d_name);
+                    h1 = CreateFile(full_path, GENERIC_READ,
+                                    FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                    NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
-//                     //minfo("%s full_path: %s ", szTag, full_path);
-
-//                     /* Skip file if it is a directory */
-//                     DIR *is_dir = NULL;
-
-
-//                     if (is_dir = opendir(full_path), is_dir) {
-//                         mdebug1("File %s is a directory. Skipping it.", full_path);
-//                         closedir(is_dir);
-//                         continue;
-//                     }
-
-//                     /* Match wildcard */
-//                     char *regex = NULL;
-//                     regex = wstr_replace(wildcard,".","\\p");
-//                     os_free(regex);
-//                     regex = wstr_replace(wildcard,"*","\\.*");
-
-
-//                     /* Add the starting ^ regex */
-//                     {
-//                         char p[PATH_MAX] = {0};
-//                         snprintf(p,PATH_MAX,"^%s",regex);
-//                         os_free(regex);
-//                         os_strdup(p,regex);
-//                     }
-
-//                     /* If wildcard is only ^\.* add another \.* */
-//                     if (strlen(regex) == 4) {
-//                         char *rgx = NULL;
-//                         rgx = wstr_replace(regex,"\\.*","\\.*\\.*");
-//                         os_free(regex);
-//                         regex = rgx;
-
-//                         //minfo("%s (strlen==4) regex: %s ", szTag, regex);
-//                     }
-
-//                     /* Add $ at the end of the regex */
-//                     wm_strcat(&regex, "$", 0);
-
-
-//                     if (!OS_Regex(regex,dirent->d_name)) {
-//                         mdebug2("Regex %s doesn't match with file '%s'",regex,dirent->d_name);
-//                         os_free(regex);
-//                         continue;
-//                     }
-
-//                     os_free(regex);
-                     found = 0;
-                    for (i = 0; globs[j].gfiles[i].file; i++) {
-                        if (!strcmp(globs[j].gfiles[i].file, full_path)) {
-                            found = 1;
-                            break;
-                        }
+                    if (h1 == INVALID_HANDLE_VALUE) {
+                        continue;
                     }
 
+                    CloseHandle(h1);
 
-                    if (!found) {
-                        retval = 1;
-                        int added = 0;
+                    minfo(NEW_GLOB_FILE, globs[j].gpath, full_path);
 
-                        char *ex_file = OSHash_Get(excluded_files,full_path);
+                    os_realloc(globs[j].gfiles, (i +2)*sizeof(logreader), globs[j].gfiles);
 
+                    /* Copy the current item to the end mark as it should be a pattern */
+                    memcpy(globs[j].gfiles + i + 1, globs[j].gfiles + i, sizeof(logreader));
 
-minfo("%s ex_file: %s  found ", szTag, ex_file);
-
-                        if(!ex_file) {
-
-                            /*  Because Windows cache's files, we need to check if the file
-                                exists. Deleted files can still appear due to caching */
-                            HANDLE h1;
-
-                            h1 = CreateFile(full_path, GENERIC_READ,
-                                            FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
-                                            NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-                            if (h1 == INVALID_HANDLE_VALUE) {
-                                continue;
-                            }
-
-                            CloseHandle(h1);
-
-                            minfo(NEW_GLOB_FILE, globs[j].gpath, full_path);
-
-                            os_realloc(globs[j].gfiles, (i +2)*sizeof(logreader), globs[j].gfiles);
-
-                            /* Copy the current item to the end mark as it should be a pattern */
-                            memcpy(globs[j].gfiles + i + 1, globs[j].gfiles + i, sizeof(logreader));
-
-                            os_strdup(full_path, globs[j].gfiles[i].file);
-                            w_mutex_init(&globs[j].gfiles[i].mutex, &win_el_mutex_attr);
-                            globs[j].gfiles[i].fp = NULL;
-                            globs[j].gfiles[i].exists = 1;
-                            globs[j].gfiles[i + 1].file = NULL;
-                            globs[j].gfiles[i + 1].target = NULL;
-                            current_files++;
-                            globs[j].num_files++;
-                            mdebug2(CURRENT_FILES, current_files, maximum_files);
-                            if  (!globs[j].gfiles[i].read) {
-                                set_read(&globs[j].gfiles[i], i, j);
-                            } else {
-                                handle_file(i, j, do_seek, 1);
-                            }
-
-                            added = 1;
-                        }
-
-                        char *file_excluded_binary = OSHash_Get(excluded_binaries,full_path);
-
-                        /* This file could have to non binary file */
-                        if (file_excluded_binary && !added) {
-                            os_realloc(globs[j].gfiles, (i +2)*sizeof(logreader), globs[j].gfiles);
-
-                            /* Copy the current item to the end mark as it should be a pattern */
-                            memcpy(globs[j].gfiles + i + 1, globs[j].gfiles + i, sizeof(logreader));
-
-                            os_strdup(full_path, globs[j].gfiles[i].file);
-                            w_mutex_init(&globs[j].gfiles[i].mutex, &win_el_mutex_attr);
-                            globs[j].gfiles[i].fp = NULL;
-                            globs[j].gfiles[i].exists = 1;
-                            globs[j].gfiles[i + 1].file = NULL;
-                            globs[j].gfiles[i + 1].target = NULL;
-                            current_files++;
-                            globs[j].num_files++;
-                            mdebug2(CURRENT_FILES, current_files, maximum_files);
-                            if  (!globs[j].gfiles[i].read) {
-                                set_read(&globs[j].gfiles[i], i, j);
-                            } else {
-                                handle_file(i, j, do_seek, 1);
-                            }
-                        }
+                    os_strdup(full_path, globs[j].gfiles[i].file);
+                    w_mutex_init(&globs[j].gfiles[i].mutex, &win_el_mutex_attr);
+                    globs[j].gfiles[i].fp = NULL;
+                    globs[j].gfiles[i].exists = 1;
+                    globs[j].gfiles[i + 1].file = NULL;
+                    globs[j].gfiles[i + 1].target = NULL;
+                    current_files++;
+                    globs[j].num_files++;
+                    mdebug2(CURRENT_FILES, current_files, maximum_files);
+                    if  (!globs[j].gfiles[i].read) {
+                        set_read(&globs[j].gfiles[i], i, j);
+                    } else {
+                        handle_file(i, j, do_seek, 1);
                     }
 
-//                }
-//                closedir(dir);
-//            }
-            os_free(global_path);
+                    added = 1;
+
+                    mdebug2("check_pattern_expand added");
+                }
+
+                char *file_excluded_binary = OSHash_Get(excluded_binaries,full_path);
+
+                /* This file could have to non binary file */
+                if (file_excluded_binary && !added) {
+                    os_realloc(globs[j].gfiles, (i +2)*sizeof(logreader), globs[j].gfiles);
+
+                    /* Copy the current item to the end mark as it should be a pattern */
+                    memcpy(globs[j].gfiles + i + 1, globs[j].gfiles + i, sizeof(logreader));
+
+                    os_strdup(full_path, globs[j].gfiles[i].file);
+                    w_mutex_init(&globs[j].gfiles[i].mutex, &win_el_mutex_attr);
+                    globs[j].gfiles[i].fp = NULL;
+                    globs[j].gfiles[i].exists = 1;
+                    globs[j].gfiles[i + 1].file = NULL;
+                    globs[j].gfiles[i + 1].target = NULL;
+                    current_files++;
+                    globs[j].num_files++;
+                    mdebug2(CURRENT_FILES, current_files, maximum_files);
+                    if  (!globs[j].gfiles[i].read) {
+                        set_read(&globs[j].gfiles[i], i, j);
+                    } else {
+                        handle_file(i, j, do_seek, 1);
+                    }
+                }
+            }
+
+            os_free(full_path);
         }
     }
-
-    minfo("%s end retval :%d", szTag, retval);
-    
+   
     return retval;
 }
 

@@ -662,8 +662,10 @@ int Read_Localfile(XML_NODE node, void *d1, __attribute__((unused)) void *d2)
             totalFiles = 0;
             
             while (NULL != result[file]) {
-                if (file_exist(result[file]))
+                if (file_exist(result[file])) {
+                    mdebug2("Read_Localfile strdup:%s", result[file]);    
                     os_strdup(result[file], expand_files[totalFiles++]);
+                }
 
                 file++;
             }
